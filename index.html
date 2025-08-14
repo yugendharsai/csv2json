@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#0ea5e9" />
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="assets/icon-192.png" sizes="192x192">
+  <link rel="apple-touch-icon" href="assets/icon-192.png">
+  <title>CSV → JSON Converter</title>
+  <style>
+    :root{
+      --bg:#0b1020;
+      --panel:#0f172a;
+      --muted:#334155;
+      --text:#e2e8f0;
+      --accent:#0ea5e9;
+      --accent-2:#22d3ee;
+      --danger:#ef4444;
+      --ok:#22c55e;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      background: radial-gradient(1200px 600px at 80% -10%, rgba(34,211,238,.15), transparent 60%),
+                  radial-gradient(900px 600px at 10% 110%, rgba(14,165,233,.12), transparent 60%),
+                  var(--bg);
+      color:var(--text);
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      line-height:1.4;
+    }
+    header{
+      display:flex;align-items:center;gap:.75rem;
+      padding:1rem 1.25rem;border-bottom:1px solid rgba(148,163,184,.15);
+      position:sticky;top:0;background:rgba(11,16,32,.7);backdrop-filter: blur(8px);
+    }
+    header img{width:40px;height:40px;border-radius:12px}
+    header h1{font-size:1.15rem;margin:.1rem 0;font-weight:700;letter-spacing:.2px}
+    header .tag{margin-left:auto;font-size:.8rem;color:#94a3b8}
+    main{max-width:1100px;margin:1.25rem auto;padding:0 1rem;display:grid;gap:1rem}
+    .card{
+      background:linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,.01));
+      border:1px solid rgba(148,163,184,.15);
+      border-radius:16px;padding:1rem 1rem 1.1rem;
+      box-shadow: 0 10px 30px rgba(2,6,23,.25);
+    }
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+    @media (max-width:940px){.row{grid-template-columns:1fr}}
+    .panel-title{display:flex;align-items:center;gap:.5rem;margin-bottom:.5rem;color:#cbd5e1}
+    .muted{color:#94a3b8}
+    textarea{
+      width:100%;min-height:240px;background:#0b1220;color:var(--text);border-radius:12px;
+      border:1px solid rgba(148,163,184,.15);padding: .8rem;font-family:var(--mono);resize:vertical;
+    }
+    .controls{display:flex;flex-wrap:wrap;gap:.6rem;align-items:center;margin:.5rem 0 1rem}
+    .controls > *{margin-right:.25rem}
+    input[type="file"]{display:none}
+    .btn, label[for="file"]{
+      display:inline-flex;align-items:center;gap:.5rem;
+      background: linear-gradient(180deg, rgba(14,165,233,.15), rgba(14,165,233,.08));
+      color:var(--text);padding:.6rem .9rem;border-radius:12px;border:1px solid rgba(14,165,233,.25);
+      cursor:pointer;font-weight:600;letter-spacing:.2px
+    }
+    .btn.secondary{background:rgba(148,163,184,.08);border-color:rgba(148,163,184,.2)}
+    .btn.danger{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,.25)}
+    .btn.ok{background:rgba(34,197,94,.12);border-color:rgba(34,197,94,.25)}
+    .btn:disabled{opacity:.6;cursor:not-allowed}
+    select, input[type="text"], input[type="number"]{
+      background:#0b1220;border:1px solid rgba(148,163,184,.2);color:var(--text);
+      border-radius:10px;padding:.55rem .65rem
+    }
+    pre.output{
+      min-height:240px;background:#0b1220;color:#d1fae5;border-radius:12px;border:1px solid rgba(148,163,184,.15);
+      padding:.9rem;overflow:auto;font-family:var(--mono)
+    }
+    footer{padding:1rem 1.25rem;color:#94a3b8;text-align:center}
+    .chip{display:inline-flex;gap:.35rem;align-items:center;padding:.25rem .5rem;border-radius:999px;
+          border:1px solid rgba(148,163,184,.2);background:rgba(148,163,184,.07);font-size:.8rem}
+    .kbd{font-family:var(--mono);font-size:.85em;background:#0b1220;border:1px solid rgba(148,163,184,.25);padding:.1rem .35rem;border-radius:6px}
+    .note{font-size:.9rem;color:#a1a1aa}
+  </style>
+</head>
+<body>
+  <header>
+    <img src="assets/icon-192.png" alt="icon">
+    <div>
+      <h1>CSV → JSON Converter</h1>
+      <div class="note">Fast, offline-capable, privacy-first. Your data never leaves your browser.</div>
+    </div>
+    <span class="tag">PWA • Offline ready</span>
+  </header>
+
+  <main>
+    <section class="card">
+      <div class="panel-title">1) Input CSV</div>
+      <div class="controls">
+        <input id="file" type="file" accept=".csv,text/csv" />
+        <label for="file" title="Upload CSV file"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 16V4m0 0 4 4m-4-4-4 4M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> Upload CSV</label>
+        <button class="btn secondary" id="sample">Load sample</button>
+        <button class="btn danger" id="clear">Clear</button>
+        <span class="chip"><span class="kbd">Ctrl</span> + <span class="kbd">V</span> to paste</span>
+      </div>
+      <textarea id="csv" placeholder="Paste your CSV here..."></textarea>
+      <div class="controls">
+        <label class="chip"><input type="checkbox" id="hasHeader" checked> Header row</label>
+        <label>Delimiter:
+          <select id="delimiter">
+            <option value="auto" selected>Auto-detect</option>
+            <option value=",">Comma (,)</option>
+            <option value=";">Semicolon (;)</option>
+            <option value="\t">Tab</option>
+            <option value="|">Pipe (|)</option>
+          </select>
+        </label>
+        <label>Line breaks:
+          <select id="eol">
+            <option value="auto" selected>Auto</option>
+            <option value="\n">Unix (\n)</option>
+            <option value="\r\n">Windows (\r\n)</option>
+          </select>
+        </label>
+        <label>Empty cells:
+          <select id="emptyPolicy">
+            <option value="null" selected>Use null</option>
+            <option value="empty">Keep empty string</option>
+            <option value="omit">Omit field</option>
+          </select>
+        </label>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="panel-title">2) Convert</div>
+      <div class="controls">
+        <button class="btn ok" id="convert">Convert to JSON</button>
+        <button class="btn secondary" id="copyJson" disabled>Copy JSON</button>
+        <button class="btn" id="downloadJson" disabled>Download JSON</button>
+        <button class="btn secondary" id="beautify" disabled>Beautify</button>
+        <button class="btn secondary" id="minify" disabled>Minify</button>
+      </div>
+      <pre class="output" id="jsonOutput" aria-live="polite"></pre>
+    </section>
+
+    <section class="card">
+      <div class="panel-title">Tips</div>
+      <ul class="note">
+        <li>Works fully offline once loaded (install from your browser for a native-like app).</li>
+        <li>Supports quoted fields, escaped quotes, and newlines in cells.</li>
+        <li>Toggle “Header row” to switch between <em>array of objects</em> and <em>array of arrays</em>.</li>
+      </ul>
+    </section>
+  </main>
+
+  <footer>
+    Built with ❤️ — No tracking, no uploads, 100% client-side.
+  </footer>
+
+  <script src="app.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('service-worker.js');
+      });
+    }
+  </script>
+</body>
+</html>
